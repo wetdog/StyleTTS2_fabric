@@ -51,7 +51,17 @@ logger.addHandler(handler)
 @click.option('-p', '--config_path', default='Configs/config_ft.yml', type=str)
 def main(config_path):
     config = yaml.safe_load(open(config_path))
-    
+    # H100 settings
+    if torch.cuda.is_available():
+    gpu_name = torch.cuda.get_device_name(0)
+    if 'H100' in gpu_name:
+        print(f"H100 detected: {gpu_name}. Applying precision fixes...")
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
+        torch.set_float32_matmul_precision('highest')
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+        
     log_dir = config['log_dir']
     if not osp.exists(log_dir): os.makedirs(log_dir, exist_ok=True)
     shutil.copy(config_path, osp.join(log_dir, osp.basename(config_path)))
